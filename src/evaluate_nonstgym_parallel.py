@@ -40,9 +40,8 @@ torch.backends.nnpack.enabled = False
 
 from joblib import Parallel, delayed
 
-from stable_baselines3.common.env_util import make_atari_env, make_vec_env
-from stable_baselines3.common.vec_env import VecFrameStack, DummyVecEnv, VecNormalize
-from stable_baselines3.common.atari_wrappers import AtariWrapper
+from stable_baselines3.common.env_util import  make_vec_env
+from stable_baselines3.common.vec_env import  DummyVecEnv, VecNormalize
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3 import PPO
 
@@ -50,8 +49,6 @@ from environments.nsrl_tracking_wrapper import (
     LifelongNSWrapperSB3ClassicControl,
     LifelongNSWrapperSB3Mujoco,
 )
-from environments.nsrl_atari import PongBallSpeedNonStationary, FreewayNonStationary
-from environments.minigrid_exploration import KeyCorridorSampler
 
 from minigrid.wrappers import OneHotPartialObsWrapper, ImgObsWrapper
 
@@ -155,48 +152,6 @@ def build_env(
         if configurations[i].get("normalize", False):
             env = VecNormalize(env)
 
-    elif type_wrapper == "atari":
-        num_envs = 1
-
-        if environment == "ALE/Pong-v5":
-            env = make_vec_env(
-                environment,
-                n_envs=1,
-                wrapper_class=lambda e: PongBallSpeedNonStationary(
-                    AtariWrapper(e),
-                    start_gain=tunable_params["start_gain"],
-                    end_gain=tunable_params["end_gain"],
-                    schedule=tunable_params["schedule"],
-                    horizon=total_timesteps,
-                ),
-            )
-
-        elif environment == "ALE/Freeway-v5":
-            env = make_vec_env(
-                environment,
-                n_envs=1,
-                wrapper_class=lambda e: FreewayNonStationary(
-                    AtariWrapper(e),
-                    start_gain=tunable_params["start_gain"],
-                    end_gain=tunable_params["end_gain"],
-                    schedule=tunable_params["schedule"],
-                    horizon=total_timesteps,
-                ),
-            )
-
-        elif environment == "ALE/MontezumaRevenge-v5":
-            env = make_vec_env(
-                environment,
-                n_envs=1,
-                env_kwargs={"frameskip": 1},
-                wrapper_class=lambda e: AtariWrapper(e),
-            )
-
-        else:
-            raise Exception("Unsupported Nonst. Atari env")
-
-        # Temporal information
-        env = VecFrameStack(env, n_stack=4)
 
     elif type_wrapper == "none" or type_wrapper == "river" or type_wrapper == "minigrid_exploration":
         num_envs = 1
@@ -231,12 +186,6 @@ def build_env(
             )
             env = OneHotPartialObsWrapper(env)
             env = ImgObsWrapper(env)
-        elif env_to_benchmark == "KeyCorridor":
-            env = gym.make("MiniGrid-KeyCorridorS4R3-v0")
-            env = OneHotPartialObsWrapper(env)  
-            env = ImgObsWrapper(env) 
-            env = KeyCorridorSampler(env=env, carry_key_prob = 0.5)
-        else:
             raise Exception("Unknown non-wrapped env")
 
     else:
