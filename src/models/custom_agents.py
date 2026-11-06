@@ -458,8 +458,11 @@ class SAC_F(SAC):
                 else:
                     states = self.world_model.sample(num_forget)
 
-                actions = th.tensor(
-                    [self.action_space.sample() for _ in range(num_forget)],
+                # SB3 trains SAC's critic on actions rescaled to [-1, 1] 
+                actions = th.as_tensor(
+                    self.policy.scale_action(
+                        np.stack([self.action_space.sample() for _ in range(num_forget)])
+                    ),
                     device=self.device,
                 )
 
